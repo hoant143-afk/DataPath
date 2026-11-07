@@ -1,0 +1,6 @@
+{
+  "name": "DataPath AI – Học lập trình Python",
+  "description": "Hệ thống học tập thích ứng và phản hồi thông minh trong học lập trình Python (Danh sách List)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
