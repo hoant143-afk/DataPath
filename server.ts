@@ -120,14 +120,20 @@ Trả về cấu trúc JSON gồm:
   // API endpoint for Diagnostic analysis & adaptive path recommendation
   app.post("/api/ai/analyze-diagnostic", async (req, res) => {
     try {
-      const { answers, studentId } = req.body;
-      // Return adaptive analysis
+      const { scores, studentId, answers } = req.body;
+      let scoreMap = scores || {};
+      const lowUnits = Object.entries(scoreMap).filter(([k, v]: [string, any]) => v < 50).map(([k, v]) => `${k} (${v}%)`);
+      const highUnits = Object.entries(scoreMap).filter(([k, v]: [string, any]) => v >= 80).map(([k, v]) => `${k} (${v}%)`);
+      
+      const recommendedPath = lowUnits.length > 0 ? `Củng cố các đơn vị kiến thức: ${lowUnits.join(', ')}` : 'Thực hiện nhiệm vụ Vận dụng cao (T09-T12)';
+      const rationale = `Phân tích chẩn đoán thực tế cho ${studentId || 'Học sinh'}: Các đơn vị đạt chuẩn (≥80%): [${highUnits.join(', ') || 'Chưa có'}]. Các đơn vị dưới ngưỡng 50%: [${lowUnits.join(', ') || 'Không có'}]. Hệ thống định hướng lộ trình thích ứng ZPD tương ứng.`;
+
       return res.json({
         success: true,
         analysisTimestamp: new Date().toISOString(),
         studentId: studentId || "HS-DEMO",
-        recommendedPath: "Củng cố thao tác thêm/xóa phần tử và duyệt danh sách bằng vòng lặp for.",
-        rationale: "Dựa trên kết quả bài chẩn đoán, học sinh đã nắm vững K01-K04 nhưng còn lúng túng ở K06-K08 (thêm/xóa) và K09 (duyệt danh sách)."
+        recommendedPath,
+        rationale
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -136,12 +142,12 @@ Trả về cấu trúc JSON gồm:
 
   // --- Teacher Authentication & RBAC System (Vercel & Express compatible) ---
   const SESSION_COOKIE_NAME = "datapath_teacher_session";
-  const SESSION_SECRET = process.env.SESSION_SECRET || "datapath_session_hmac_secret_2026_vercel_protected";
   const isProduction = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+  const SESSION_SECRET = process.env.SESSION_SECRET || (isProduction ? "" : "datapath_session_hmac_secret_2026_vercel_protected");
 
   if (isProduction) {
-    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === "datapath_session_hmac_secret_2026_vercel_protected") {
-      console.error("CRITICAL SECURITY ERROR: SESSION_SECRET is missing or using default in production!");
+    if (!process.env.SESSION_SECRET) {
+      console.error("CRITICAL SECURITY ERROR: SESSION_SECRET is missing in production!");
     }
     if (!process.env.GOOGLE_CLIENT_ID) {
       console.error("CRITICAL SECURITY ERROR: GOOGLE_CLIENT_ID is missing in production!");
